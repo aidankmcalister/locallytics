@@ -66,7 +66,7 @@ async function fetcher(url: string) {
 }
 
 export async function AnalyticsDisplay({
-  endpoint = '/api/locallytics/metrics',
+  endpoint = '/api/locallytics',
   from,
   to,
   path,

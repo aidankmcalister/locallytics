@@ -1,0 +1,105 @@
+// src/server/createLocallyticsHandler.ts
+import { z } from 'zod';
+import type { StorageAdapter, AnyEvent } from '../types';
+
+/**
+ * Creates a unified handler that supports both POST (ingest) and GET (metrics)
+ * in a single API route.
+ */
+export function createLocallyticsHandler(adapter: StorageAdapter) {
+  // Validation schema for ingest
+  const ingestSchema = z.object({
+    events: z
+      .array(
+        z.object({
+          id: z.string(),
+          ts: z.number().int(),
+          sessionId: z.string(),
+          anonId: z.string().optional(),
+          url: z.string(),
+          path: z.string(),
+          referrer: z.string().optional(),
+          screen: z.object({ w: z.number(), h: z.number() }).optional(),
+          type: z.enum(['pageview', 'event']),
+          title: z.string().optional(),
+          name: z.string().optional(),
+          props: z.any().optional(),
+        }),
+      )
+      .max(500),
+  });
+
+  const handler = async function handler(req: Request) {
+    const method = req.method;
+
+    // Handle POST requests (ingest events)
+    if (method === 'POST') {
+      try {
+        const body = await req.json();
+        const parsed = ingestSchema.parse(body);
+
+        // Clean the events by removing undefined values
+        const cleaned: AnyEvent[] = parsed.events.map((event) => {
+          const cleanedEvent: Record<string, any> = { ...event };
+          for (const key in cleanedEvent) {
+            if (cleanedEvent[key] === undefined) {
+              delete cleanedEvent[key];
+            }
+          }
+          return cleanedEvent as AnyEvent;
+        });
+
+        await adapter.insertEvents(cleaned);
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { 'content-type': 'application/json' },
+        });
+      } catch {
+        return new Response(JSON.stringify({ ok: false }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+    }
+
+    // Handle GET requests (fetch metrics)
+    if (method === 'GET') {
+      const url = new URL(req.url);
+      const from =
+        url.searchParams.get('from') ||
+        new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString();
+      const to = url.searchParams.get('to') || new Date().toISOString();
+      const path = url.searchParams.get('path');
+
+      const metricsOpts = {
+        from: new Date(from),
+        to: new Date(to),
+        ...(path ? { path } : {}),
+      };
+
+      const data = await adapter.metrics(metricsOpts);
+      return new Response(JSON.stringify(data), {
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    // Method not allowed
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: {
+        'content-type': 'application/json',
+        allow: 'GET, POST',
+      },
+    });
+  };
+
+  // Return an object with GET and POST properties for convenience
+  return Object.assign(handler, {
+    GET: handler,
+    POST: handler,
+  });
+}
+
+/**
+ * Alias for createLocallyticsHandler - provides a cleaner API name
+ */
+export const createLocallyticsClient = createLocallyticsHandler;

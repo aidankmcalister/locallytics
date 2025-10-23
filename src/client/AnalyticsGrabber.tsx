@@ -9,7 +9,7 @@ export type GrabberProps = {
 };
 
 export function AnalyticsGrabber({
-  endpoint = '/api/locallytics/ingest',
+  endpoint = '/api/locallytics',
   dntRespect = true,
 }: GrabberProps) {
   const queue = useRef<AnyEvent[]>([]);
