@@ -1,5 +1,6 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
+  "exclude": ["tsup.config.ts", "test"],
   "compilerOptions": {
     // File Layout
     "rootDir": "src",
@@ -15,10 +16,10 @@
     // "types": ["node"],
     // and npm install -D @types/node
 
-    // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
+    // Other Outputs - tsup will handle these
+    "sourceMap": false,
+    "declaration": false,
+    "declarationMap": false,
 
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
@@ -43,6 +44,6 @@
 
     "emitDeclarationOnly": false,
     "esModuleInterop": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "bundler"
   }
 }
