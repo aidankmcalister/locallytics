@@ -22,13 +22,13 @@ Locallytics is a privacy-first analytics solution where developers drop in an `<
 - **TypeScript-first** with full type safety
 - **Kysely-based** database adapter with support for Postgres and SQLite
 
-### Differentiators
 
-- Competes with Plausible, Fathom, and PostHog
-- "Better Auth for analytics"  everything runs in your app
-- Open-source SDK
+### What Makes It Different
+
+- Everything runs in your app – complete control over your data
+- Open-source SDK with no vendor lock-in
 - Developer-first DX with TypeScript and modern tooling
-
+- Self-hosted by design – no external dependencies
 ---
 
 ## Installation

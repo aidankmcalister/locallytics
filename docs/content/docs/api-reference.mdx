@@ -1,397 +1,84 @@
 ---
 title: API Reference
-description: Complete API reference for Locallytics
+description: Core APIs for Locallytics
 ---
 
-# API Reference
+## AnalyticsGrabber
 
-Complete reference for all Locallytics APIs, components, and types.
+The main React component that collects analytics data.
 
-## Server APIs
+```tsx
+import { AnalyticsGrabber } from "locallytics";
 
-### `locallytics(config)` / `createLocallytics(config)`
+// Basic usage
+<AnalyticsGrabber />;
+```
 
-Creates a Locallytics instance with database-backed analytics.
+## AnalyticsJSON
 
-**Parameters:**
-
-- `config.database`: PostgreSQL connection string or Kysely instance
-
-**Returns:** `Promise<LocallyticsInstance>`
-
-The returned instance includes:
-
-- `adapter` - Storage adapter for custom usage
-- `db` - Kysely database instance
-- `handler` - Unified handler supporting GET and POST
-- `GET` - GET handler for metrics
-- `POST` - POST handler for event ingestion
-- `ingest` - Alias for POST
-- `metrics` - Alias for GET
-
-**Example with connection string:**
+Fetch analytics data from your database.
 
 ```typescript
-import { locallytics } from 'locallytics';
+import { AnalyticsJSON } from "locallytics";
 
+// Basic usage
+const data = await AnalyticsJSON({
+  startDate: "2023-01-01", // Optional start date (default: 30 days ago)
+  endDate: "2023-12-31", // Optional end date (default: now)
+  limit: 100, // Max number of events to return (default: 1000)
+  offset: 0, // Pagination offset (default: 0)
+});
+```
+
+## Event Tracking
+
+Track custom events in your application:
+
+```typescript
+// Track a page view
+window.locallytics.track("page_view", {
+  path: window.location.pathname,
+  referrer: document.referrer,
+});
+
+// Track a custom event
+window.locallytics.track("button_click", {
+  buttonId: "cta-button",
+  section: "hero",
+});
+```
+
+---
+
+## Quick Reference
+
+### Server-Side
+
+```typescript
+import { locallytics, AnalyticsJSON } from "locallytics";
+
+// Initialize
 const analytics = await locallytics({
   database: process.env.DATABASE_URL,
 });
 
+// Export handlers
 export const { GET, POST } = analytics;
-```
 
-**Example with custom Kysely instance:**
-
-```typescript
-import { Kysely, PostgresDialect } from 'kysely';
-import { Pool } from 'pg';
-import { locallytics } from 'locallytics';
-
-const db = new Kysely<DB>({
-  dialect: new PostgresDialect({
-    pool: new Pool({ connectionString: process.env.DATABASE_URL }),
-  }),
-});
-
-const analytics = await locallytics({ database: db });
-```
-
----
-
-### `locallyticsSync(config)`
-
-Synchronous version that requires a pre-configured Kysely instance.
-
-**Parameters:**
-
-- `config.db`: Kysely instance
-
-**Returns:** `LocallyticsInstance`
-
-**Example:**
-
-```typescript
-import { locallyticsSync } from 'locallytics';
-
-const analytics = locallyticsSync({ db: myKyselyInstance });
-```
-
----
-
-### `AnalyticsJSON(options)`
-
-Server-side function that fetches analytics data and returns it as JSON.
-
-**Parameters:**
-
-- `endpoint?` - API endpoint (default: `/api/locallytics`)
-- `from?` - Start date ISO string (default: 30 days ago)
-- `to?` - End date ISO string (default: now)
-- `path?` - Filter by specific path
-- `headersReader?` - Function to read request headers (for SSR)
-
-**Returns:** `Promise<AnalyticsData>`
-
-**AnalyticsData Type:**
-
-```typescript
-interface AnalyticsData {
-  pageviews: number;
-  uniqueVisitors: number;
-  topPages: { path: string; pageviews: number }[];
-  dailyStats: { date: string; pageviews: number; uniqueVisitors: number }[];
-  topReferrers: { referrer: string; visits: number }[];
-  topEvents: { eventName: string; count: number }[];
-}
-```
-
-**Examples:**
-
-```typescript
-// Basic usage
+// Fetch metrics
 const data = await AnalyticsJSON({});
-
-// With date range
-const data = await AnalyticsJSON({
-  from: '2024-01-01',
-  to: '2024-01-31',
-});
-
-// With path filter
-const data = await AnalyticsJSON({
-  path: '/blog',
-});
-
-// With custom endpoint
-const data = await AnalyticsJSON({
-  endpoint: '/api/custom-analytics',
-});
 ```
 
----
-
-## Client Components
-
-### `<AnalyticsGrabber />`
-
-Client-side analytics collector that tracks pageviews and custom events.
-
-**Props:**
-
-- `endpoint?` - API endpoint to send events to (default: `/api/locallytics`)
-- `dntRespect?` - Respect Do Not Track browser setting (default: `true`)
-
-**Features:**
-
-- Automatically tracks pageviews on mount
-- Queues events and sends in batches (max 10 events or every 3 seconds)
-- Uses `navigator.sendBeacon()` when available, falls back to `fetch()`
-- Flushes events on page visibility change
-- Exposes `window.locallytics` API for custom tracking
-
-**Example:**
+### Client-Side
 
 ```tsx
-import { AnalyticsGrabber } from 'locallytics';
+import { AnalyticsGrabber } from "locallytics";
 
-<AnalyticsGrabber endpoint="/api/locallytics" dntRespect={true} />
-```
+// Track pageviews automatically
+<AnalyticsGrabber />;
 
----
-
-## `window.locallytics` API
-
-The `<AnalyticsGrabber />` component exposes a global API for custom event tracking.
-
-### `track(eventName, properties?)`
-
-Track a custom event with optional properties.
-
-**Parameters:**
-
-- `eventName` - String name of the event
-- `properties?` - Object with custom event properties
-
-**Examples:**
-
-```typescript
-// Button click
-window.locallytics.track('button_click', {
-  button: 'signup',
-  location: 'header',
-});
-
-// Purchase
-window.locallytics.track('purchase_completed', {
-  amount: 99.99,
-  currency: 'USD',
-  items: 3,
-});
-
-// Feature usage
-window.locallytics.track('feature_used', {
-  feature: 'dark_mode',
-  enabled: true,
-});
-```
-
----
-
-### `trackPageview(extra?)`
-
-Manually track a pageview with optional extra data.
-
-**Parameters:**
-
-- `extra?` - Object with additional pageview data
-
-**Example:**
-
-```typescript
-window.locallytics.trackPageview({
-  title: 'Custom Page Title',
-});
-```
-
----
-
-### `flush()`
-
-Manually flush queued events immediately.
-
-**Example:**
-
-```typescript
-window.locallytics.flush();
-```
-
----
-
-## Storage Adapters
-
-### `makeKyselyAdapter(db)`
-
-Creates a Kysely-based storage adapter for Postgres or SQLite.
-
-**Parameters:**
-
-- `db` - Kysely database instance
-
-**Returns:** `StorageAdapter`
-
-**Example:**
-
-```typescript
-import { Kysely, PostgresDialect } from 'kysely';
-import { Pool } from 'pg';
-import { makeKyselyAdapter } from 'locallytics';
-
-const db = new Kysely<DB>({
-  dialect: new PostgresDialect({
-    pool: new Pool({ connectionString: process.env.DATABASE_URL }),
-  }),
-});
-
-const adapter = makeKyselyAdapter(db);
-```
-
----
-
-### Custom Adapters
-
-Create custom adapters by implementing the `StorageAdapter` interface:
-
-```typescript
-interface StorageAdapter {
-  insertEvents(events: AnyEvent[]): Promise<void>;
-  metrics(opts: {
-    from: Date;
-    to: Date;
-    path?: string;
-  }): Promise<{
-    pageviews: number;
-    uniqueVisitors: number;
-    topPages: { path: string; pageviews: number }[];
-    dailyStats: { date: string; pageviews: number; uniqueVisitors: number }[];
-    topReferrers: { referrer: string; visits: number }[];
-    topEvents: { eventName: string; count: number }[];
-  }>;
-}
-```
-
-**Example custom adapter:**
-
-```typescript
-const customAdapter: StorageAdapter = {
-  async insertEvents(events) {
-    // Your custom logic to store events
-    await myDatabase.insert(events);
-  },
-
-  async metrics({ from, to, path }) {
-    // Your custom logic to compute metrics
-    return {
-      pageviews: await myDatabase.countPageviews(from, to, path),
-      uniqueVisitors: await myDatabase.countUniqueVisitors(from, to, path),
-      topPages: await myDatabase.getTopPages(from, to, path),
-      dailyStats: await myDatabase.getDailyStats(from, to, path),
-      topReferrers: await myDatabase.getTopReferrers(from, to, path),
-      topEvents: await myDatabase.getTopEvents(from, to, path),
-    };
-  },
-};
-```
-
----
-
-## Legacy/Compatibility APIs
-
-### `createLocallyticsHandler(adapter)`
-
-Creates a unified handler supporting both POST (ingest) and GET (metrics).
-
-**Parameters:**
-
-- `adapter` - Storage adapter implementing `StorageAdapter` interface
-
-**Returns:** Handler function with `.GET` and `.POST` properties
-
----
-
-### `createIngestHandler(adapter)`
-
-Creates a POST handler for event ingestion only.
-
-**Parameters:**
-
-- `adapter` - Storage adapter
-
----
-
-### `createMetricsHandler(adapter)`
-
-Creates a GET handler for fetching metrics only.
-
-**Parameters:**
-
-- `adapter` - Storage adapter
-
----
-
-## TypeScript Types
-
-### Core Event Types
-
-```typescript
-type EventBase = {
-  id: string;
-  ts: number;
-  sessionId: string;
-  anonId?: string;
-  url: string;
-  path: string;
-  referrer?: string;
-  screen?: { w: number; h: number };
-};
-
-type PageviewEvent = EventBase & {
-  type: 'pageview';
-  title?: string;
-};
-
-type CustomEvent<T extends string = string, P = Record<string, unknown>> = EventBase & {
-  type: 'event';
-  name: T;
-  props?: P;
-};
-
-type AnyEvent = PageviewEvent | CustomEvent;
-```
-
-### Database Types
-
-```typescript
-interface LocEvent {
-  id: string;
-  ts: number;
-  session_id: string;
-  anon_id: string | null;
-  type: 'pageview' | 'event';
-  name: string | null;
-  url: string;
-  path: string;
-  referrer: string | null;
-  title: string | null;
-  props: string | null;
-  screen_w: number | null;
-  screen_h: number | null;
-  ip_hash: string | null;
-}
-
-interface DB {
-  loc_events: LocEvent;
-}
+// Track custom events
+window.locallytics.track("event_name", { prop: "value" });
 ```
 
 ---
@@ -400,18 +87,23 @@ interface DB {
 
 <Cards>
   <Card
-    title="Quick Start"
-    href="/docs/quick-start"
-    description="Get up and running quickly"
+    title="Server APIs"
+    href="/docs/api/server-apis"
+    description="Learn about locallytics(), AnalyticsJSON(), and more"
   />
   <Card
-    title="Advanced Usage"
-    href="/docs/advanced-usage"
-    description="Learn about advanced features"
+    title="Client Components"
+    href="/docs/api/client-components"
+    description="Explore AnalyticsGrabber and window.locallytics API"
   />
   <Card
-    title="Database Schema"
-    href="/docs/database-schema"
-    description="Understand the database structure"
+    title="Storage Adapters"
+    href="/docs/api/storage-adapters"
+    description="Create custom adapters for different databases"
+  />
+  <Card
+    title="TypeScript Types"
+    href="/docs/api/types"
+    description="View all available types and interfaces"
   />
 </Cards>
