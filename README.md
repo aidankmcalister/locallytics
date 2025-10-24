@@ -1,5 +1,9 @@
 # Locallytics
 
+[![npm version](https://img.shields.io/npm/v/locallytics.svg)](https://www.npmjs.com/package/locallytics)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/locallytics)](https://bundlephobia.com/package/locallytics)
+
 **Tagline:** "Analytics that live with your app."
 
 Self-contained analytics SDK that runs entirely on your infrastructure  no external servers, no tracking scripts, no cost.
