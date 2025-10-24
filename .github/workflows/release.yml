@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 on:
   push:
@@ -7,29 +7,36 @@ on:
 
 jobs:
   release:
+    name: Release
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout current branch
-        uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: yarn
+        run: npm ci
 
-      - name: Build package
-        run: yarn build
+      - name: Build packages
+        run: npm run build --workspaces --if-present
 
-      - name: Semantic Release
-        run: npx semantic-release
+      - name: Release
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm install -g semantic-release @semantic-release/git @semantic-release/github @semantic-release/npm @semantic-release/commit-analyzer @semantic-release/release-notes-generator
+          npx semantic-release
+
 permissions:
   contents: write
-  pages: write
-  id-token: write
+  issues: write
+  pull-requests: write
