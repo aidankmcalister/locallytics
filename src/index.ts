@@ -1,7 +1,7 @@
 export { createLocallytics, locallytics, locallyticsSync } from './server/locallytics';
 
 export { AnalyticsGrabber } from './client/AnalyticsGrabber';
-export { AnalyticsJSON, type AnalyticsData } from './ui/AnalyticsJSON';
+export { AnalyticsJSON, type AnalyticsData } from './output/AnalyticsJSON';
 
 export { makeKyselyAdapter } from './server/adapters/kysely';
 
