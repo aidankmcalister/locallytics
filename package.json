@@ -34,9 +34,7 @@
     "lint": "eslint . --ext .ts,.tsx --fix --config eslint.config.js",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "check-format": "prettier --check \"**/*.{ts,tsx,json,md}\"",
-    "check-lint": "eslint . --ext .ts,.tsx --config eslint.config.js",
-    "prepare": "husky install",
-    "pre-commit": "lint-staged"
+    "check-lint": "eslint . --ext .ts,.tsx --config eslint.config.js"
   },
   "peerDependencies": {
     "react": ">=18"
@@ -53,8 +51,6 @@
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react-hooks": "^7.0.0",
     "eslint-plugin-react-refresh": "^0.4.24",
-    "husky": "^9.1.7",
-    "lint-staged": "^16.2.6",
     "prettier": "^3.4.2",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
