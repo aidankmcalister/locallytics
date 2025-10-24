@@ -4,7 +4,6 @@ export { AnalyticsGrabber } from './client/AnalyticsGrabber';
 export { AnalyticsDisplay } from './ui/AnalyticsDisplay';
 
 export { makeKyselyAdapter } from './server/adapters/kysely';
-export { memoryAdapter } from './server/adapters/memory';
 
 export * from './types';
 
