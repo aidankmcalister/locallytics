@@ -2,7 +2,10 @@
 export { AnalyticsGrabber } from './client/AnalyticsGrabber';
 export { AnalyticsDisplay } from './ui/AnalyticsDisplay';
 
-// Unified API (recommended)
+// Main API (recommended)
+export { locallytics } from './server/locallytics';
+
+// Unified handler API
 export {
   createLocallyticsHandler,
   createLocallyticsClient,
