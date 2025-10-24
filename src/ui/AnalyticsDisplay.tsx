@@ -1,5 +1,6 @@
 import React from 'react';
 
+/** Function that returns request headers from your framework (Next.js, Remix, etc.) */
 type HeaderReader = () => Headers | Map<string, string> | null;
 
 function isAbsoluteUrl(url: string) {
@@ -50,6 +51,23 @@ async function fetcher(url: string) {
   return res.json();
 }
 
+/**
+ * Server-side component that fetches and displays analytics metrics.
+ *
+ * Renders a JSON preview of your analytics data including pageviews, unique visitors,
+ * top pages, referrers, and daily stats.
+ *
+ * @example
+ * ```tsx
+ * // In Next.js App Router
+ * import { AnalyticsDisplay } from 'locallytics';
+ * import { headers } from 'next/headers';
+ *
+ * export default function AnalyticsPage() {
+ *   return <AnalyticsDisplay headersReader={headers} />;
+ * }
+ * ```
+ */
 export async function AnalyticsDisplay({
   endpoint = '/api/locallytics',
   from,
@@ -57,10 +75,15 @@ export async function AnalyticsDisplay({
   path,
   headersReader,
 }: {
+  /** API endpoint to fetch metrics from (default: '/api/locallytics') */
   endpoint?: string;
+  /** Start date (ISO string, default: 30 days ago) */
   from?: string;
+  /** End date (ISO string, default: now) */
   to?: string;
+  /** Filter by specific path */
   path?: string;
+  /** Function to read request headers (for server-side rendering) */
   headersReader?: HeaderReader;
 }) {
   const qs = new URLSearchParams();

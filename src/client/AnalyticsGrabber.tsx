@@ -3,10 +3,36 @@ import { useEffect, useRef } from 'react';
 import type { AnyEvent, EventBase, PageviewEvent } from '../types';
 
 export type GrabberProps = {
+  /** API endpoint to send events to (default: '/api/locallytics') */
   endpoint?: string;
+  /** Respect Do Not Track browser setting (default: true) */
   dntRespect?: boolean;
 };
 
+/**
+ * Client-side analytics collector that tracks pageviews and custom events.
+ *
+ * Automatically queues and sends events to your backend, with periodic and
+ * visibility-triggered flushing. Exposes `window.locallytics` API for custom tracking.
+ *
+ * @example
+ * ```tsx
+ * // In your root layout
+ * export default function RootLayout({ children }) {
+ *   return (
+ *     <html>
+ *       <body>
+ *         <AnalyticsGrabber />
+ *         {children}
+ *       </body>
+ *     </html>
+ *   );
+ * }
+ *
+ * // Track custom events
+ * window.locallytics.track('button_click', { button: 'signup' });
+ * ```
+ */
 export function AnalyticsGrabber({
   endpoint = '/api/locallytics',
   dntRespect = true,

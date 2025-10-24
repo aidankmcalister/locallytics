@@ -1,10 +1,29 @@
 import type { Kysely } from 'kysely';
 import type { DB } from './db-types';
+import type { StorageAdapter } from '../types';
 import { makeKyselyAdapter } from './adapters/kysely';
 import { createLocallyticsHandler } from './createLocallyticsHandler';
 
 export interface LocallyticsConfig {
+  /** Postgres connection string or Kysely instance */
   database: string | Kysely<DB>;
+}
+
+export interface LocallyticsInstance {
+  /** Storage adapter for custom usage */
+  adapter: StorageAdapter;
+  /** Kysely database instance */
+  db: Kysely<DB>;
+  /** Unified handler supporting GET and POST */
+  handler: (req: Request) => Promise<Response>;
+  /** GET handler for metrics */
+  GET: (req: Request) => Promise<Response>;
+  /** POST handler for event ingestion */
+  POST: (req: Request) => Promise<Response>;
+  /** Alias for POST */
+  ingest: (req: Request) => Promise<Response>;
+  /** Alias for GET */
+  metrics: (req: Request) => Promise<Response>;
 }
 
 async function createKyselyFromConnectionString(connectionString: string): Promise<Kysely<DB>> {
@@ -18,7 +37,22 @@ async function createKyselyFromConnectionString(connectionString: string): Promi
   });
 }
 
-export async function createLocallytics(config: LocallyticsConfig) {
+/**
+ * Create a Locallytics instance with database-backed analytics.
+ *
+ * @param config - Configuration with database connection string or Kysely instance
+ * @returns Analytics handlers for ingesting events and querying metrics
+ *
+ * @example
+ * ```ts
+ * const analytics = await locallytics({
+ *   database: process.env.DATABASE_URL
+ * });
+ *
+ * export const { GET, POST } = analytics;
+ * ```
+ */
+export async function createLocallytics(config: LocallyticsConfig): Promise<LocallyticsInstance> {
   let db: Kysely<DB>;
 
   if (typeof config.database !== 'string') {
@@ -41,7 +75,13 @@ export async function createLocallytics(config: LocallyticsConfig) {
   };
 }
 
-export function locallyticsSync(config: { db: Kysely<DB> }) {
+/**
+ * Synchronous version of createLocallytics for pre-configured Kysely instances.
+ *
+ * @param config - Configuration with Kysely instance
+ * @returns Analytics handlers for ingesting events and querying metrics
+ */
+export function locallyticsSync(config: { db: Kysely<DB> }): LocallyticsInstance {
   const adapter = makeKyselyAdapter(config.db);
   const handler = createLocallyticsHandler(adapter);
 
@@ -56,4 +96,8 @@ export function locallyticsSync(config: { db: Kysely<DB> }) {
   };
 }
 
+/**
+ * Alias for createLocallytics.
+ * @see {@link createLocallytics}
+ */
 export const locallytics = createLocallytics;
