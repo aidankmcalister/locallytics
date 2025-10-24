@@ -1,8 +1,17 @@
-export async function generate() {
-  console.log('Generating schema...');
+import { SqlGenerator } from '../generators/sql-generator.js';
+import { GeneratorOptions } from '../generators/base.js';
 
-  // TODO: Implement schema generation logic
-  // This should generate the database schema based on the Locallytics configuration
+export async function generate(options: GeneratorOptions = {}) {
+  try {
+    console.log('🔄 Generating schema...');
 
-  console.log('Schema generation complete!');
+    const generator = new SqlGenerator(options);
+    const outputPath = await generator.generate();
+
+    console.log(`✅ Schema generated successfully!`);
+    console.log(`📄 File: ${outputPath}`);
+    console.log(`🗄️  Dialect: ${options.dialect || 'postgres'}`);
+  } catch (error) {
+    throw new Error(`Failed to generate schema: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
