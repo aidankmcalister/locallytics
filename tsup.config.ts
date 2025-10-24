@@ -19,4 +19,6 @@ export default defineConfig({
   minify: false,
   outDir: 'dist',
   tsconfig: './tsconfig.json',
+  // Mark database drivers as external (they're optional peer deps)
+  external: ['pg', 'kysely', 'react', 'react-dom'],
 });

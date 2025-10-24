@@ -1,19 +1,26 @@
 // src/index.ts
+
+// Main API (Kysely-first)
+export { createLocallytics, locallytics, locallyticsSync } from './server/locallytics';
+
+// React components
 export { AnalyticsGrabber } from './client/AnalyticsGrabber';
 export { AnalyticsDisplay } from './ui/AnalyticsDisplay';
 
-// Main API (recommended)
-export { locallytics } from './server/locallytics';
+// Adapters
+export { makeKyselyAdapter } from './server/adapters/kysely';
+export { memoryAdapter } from './server/adapters/memory';
 
-// Unified handler API
+// Event types
+export * from './types';
+
+// Legacy handler APIs (backward compatibility)
 export {
   createLocallyticsHandler,
   createLocallyticsClient,
 } from './server/createLocallyticsHandler';
-
-// Legacy separate handlers (backwards compatibility)
 export { createIngestHandler } from './server/createIngestHandler';
 export { createMetricsHandler } from './server/createMetricsHandler';
 
-export { memoryAdapter } from './server/adapters/memory';
-export * from './types';
+// Re-export DB types for convenience
+export type { DB, LocEvent } from './server/db-types';
