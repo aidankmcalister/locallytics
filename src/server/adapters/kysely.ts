@@ -57,7 +57,7 @@ export function makeKyselyAdapter(db: Kysely<DB>): StorageAdapter {
         .select(['path'])
         .select(({ fn }) => [fn.countAll<number>().as('pv')])
         .groupBy('path')
-        .orderBy('pv desc')
+        .orderBy('pv', 'desc')
         .limit(20)
         .execute();
 
@@ -68,7 +68,7 @@ export function makeKyselyAdapter(db: Kysely<DB>): StorageAdapter {
           fn.countAll<number>().as('count'),
         ])
         .groupBy('referrer')
-        .orderBy('count desc')
+        .orderBy('count', 'desc')
         .limit(20)
         .execute();
 
