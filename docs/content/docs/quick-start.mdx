@@ -1,0 +1,199 @@
+---
+title: Quick Start
+description: Get up and running with Locallytics in minutes
+---
+
+# Quick Start
+
+This guide will help you set up Locallytics in your Next.js application in just a few steps.
+
+## Prerequisites
+
+- Next.js application (App Router or Pages Router)
+- Database set up with Locallytics schema ([Installation Guide](/docs/installation))
+- Environment variable `DATABASE_URL` configured
+
+## Step 1: Create API Route Handler
+
+### Next.js App Router
+
+Create a route handler at `app/api/locallytics/route.ts`:
+
+```typescript
+import { locallytics } from 'locallytics';
+
+export const analytics = await locallytics({
+  database: process.env.DATABASE_URL!,
+});
+
+export const { GET, POST } = analytics;
+```
+
+### Next.js Pages Router
+
+Create an API route at `pages/api/locallytics.ts`:
+
+```typescript
+import { locallytics } from 'locallytics';
+import type { NextApiRequest, NextApiResponse } from 'next';
+
+const analytics = await locallytics({
+  database: process.env.DATABASE_URL!,
+});
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const response = await analytics.handler(
+    new Request(`http://localhost${req.url}`, {
+      method: req.method,
+      headers: req.headers as any,
+      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
+    }),
+  );
+
+  res.status(response.status).json(await response.json());
+}
+```
+
+## Step 2: Add Client-Side Tracking
+
+Add the `<AnalyticsGrabber />` component to your root layout to automatically track pageviews:
+
+### App Router
+
+In `app/layout.tsx`:
+
+```tsx
+import { AnalyticsGrabber } from 'locallytics';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <AnalyticsGrabber />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+### Pages Router
+
+In `pages/_app.tsx`:
+
+```tsx
+import { AnalyticsGrabber } from 'locallytics';
+import type { AppProps } from 'next/app';
+
+export default function App({ Component, pageProps }: AppProps) {
+  return (
+    <>
+      <AnalyticsGrabber />
+      <Component {...pageProps} />
+    </>
+  );
+}
+```
+
+## Step 3: Display Analytics
+
+Create a dashboard page to view your analytics data:
+
+```tsx
+import { AnalyticsJSON } from 'locallytics';
+
+export default async function AnalyticsPage() {
+  const data = await AnalyticsJSON({});
+
+  return (
+    <div>
+      <h1>Analytics Dashboard</h1>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="card">
+          <h2>Total Pageviews</h2>
+          <p className="text-4xl">{data.pageviews.toLocaleString()}</p>
+        </div>
+
+        <div className="card">
+          <h2>Unique Visitors</h2>
+          <p className="text-4xl">{data.uniqueVisitors.toLocaleString()}</p>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <h2>Top Pages</h2>
+        <ul>
+          {data.topPages.map((page) => (
+            <li key={page.path}>
+              {page.path}: {page.pageviews} views
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+```
+
+## Step 4: Track Custom Events
+
+Add custom event tracking anywhere in your application:
+
+```tsx
+'use client';
+
+export default function SignupButton() {
+  const handleClick = () => {
+    window.locallytics.track('signup_clicked', {
+      location: 'header',
+      timestamp: Date.now(),
+    });
+
+    // Your signup logic here
+  };
+
+  return <button onClick={handleClick}>Sign Up</button>;
+}
+```
+
+## That's It!
+
+You're now tracking analytics with Locallytics. Your analytics data is being stored in your own database, and you have full control over it.
+
+## Next Steps
+
+<Cards>
+  <Card
+    title="API Reference"
+    href="/docs/api-reference"
+    description="Explore all available APIs and options"
+  />
+  <Card
+    title="Advanced Usage"
+    href="/docs/advanced-usage"
+    description="Learn about custom adapters, filtering, and more"
+  />
+  <Card
+    title="Database Schema"
+    href="/docs/database-schema"
+    description="Understand the database structure"
+  />
+</Cards>
+
+## Troubleshooting
+
+### Events not being tracked?
+
+1. Check that `<AnalyticsGrabber />` is rendered in your layout
+2. Verify the API endpoint is correct (default: `/api/locallytics`)
+3. Check browser console for errors
+4. Ensure Do Not Track is not blocking (if `dntRespect={true}`)
+5. Check network tab for POST requests to your endpoint
+
+### Analytics not showing?
+
+1. Verify database table exists and is accessible
+2. Check that the API route returns data: `GET /api/locallytics`
+3. Ensure database connection string is correct
+4. Check server logs for errors

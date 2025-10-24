@@ -1,0 +1,484 @@
+---
+title: Advanced Usage
+description: Advanced features and techniques for Locallytics
+---
+
+# Advanced Usage
+
+Learn about advanced features, custom queries, and optimization techniques.
+
+## Custom Event Tracking
+
+Track specific user interactions beyond pageviews.
+
+### Button Clicks
+
+```typescript
+window.locallytics.track('button_click', {
+  button_id: 'cta-signup',
+  page: '/home',
+  variant: 'primary',
+});
+```
+
+### Form Submissions
+
+```typescript
+window.locallytics.track('form_submit', {
+  form_name: 'newsletter',
+  success: true,
+  fields_count: 3,
+});
+```
+
+### E-commerce Events
+
+```typescript
+// Product view
+window.locallytics.track('product_view', {
+  product_id: 'ABC123',
+  category: 'electronics',
+  price: 299.99,
+});
+
+// Add to cart
+window.locallytics.track('add_to_cart', {
+  product_id: 'ABC123',
+  quantity: 1,
+});
+
+// Purchase
+window.locallytics.track('purchase', {
+  order_id: '12345',
+  total: 149.99,
+  items: 3,
+  currency: 'USD',
+});
+```
+
+### Feature Usage
+
+```typescript
+window.locallytics.track('feature_used', {
+  feature: 'dark_mode',
+  enabled: true,
+  user_type: 'premium',
+});
+```
+
+---
+
+## Filtering by Path
+
+Get analytics for specific pages or sections of your site.
+
+### Single Page Analytics
+
+```typescript
+const blogStats = await AnalyticsJSON({
+  path: '/blog/my-post',
+});
+
+console.log(`Page views: ${blogStats.pageviews}`);
+console.log(`Unique visitors: ${blogStats.uniqueVisitors}`);
+```
+
+### Section Analytics
+
+```typescript
+const docsStats = await AnalyticsJSON({
+  path: '/docs',
+});
+
+// This will include all pages under /docs/*
+```
+
+---
+
+## Custom Date Ranges
+
+Filter analytics by specific time periods.
+
+### Last 7 Days
+
+```typescript
+const lastWeek = await AnalyticsJSON({
+  from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+  to: new Date().toISOString(),
+});
+```
+
+### Specific Month
+
+```typescript
+const january = await AnalyticsJSON({
+  from: '2024-01-01T00:00:00Z',
+  to: '2024-01-31T23:59:59Z',
+});
+```
+
+### Last 24 Hours
+
+```typescript
+const today = await AnalyticsJSON({
+  from: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+});
+```
+
+---
+
+## Custom Kysely Queries
+
+Access the Kysely database instance directly for advanced queries.
+
+### Get Top Events (Last 24 Hours)
+
+```typescript
+import { locallytics } from 'locallytics';
+
+const analytics = await locallytics({
+  database: process.env.DATABASE_URL!,
+});
+
+const topEvents = await analytics.db
+  .selectFrom('loc_events')
+  .select(['name', analytics.db.fn.count('id').as('count')])
+  .where('type', '=', 'event')
+  .where('ts', '>=', Date.now() - 24 * 60 * 60 * 1000)
+  .groupBy('name')
+  .orderBy('count', 'desc')
+  .limit(10)
+  .execute();
+```
+
+### Get User Journey
+
+```typescript
+const journey = await analytics.db
+  .selectFrom('loc_events')
+  .select(['ts', 'path', 'type', 'name'])
+  .where('anon_id', '=', 'user123')
+  .orderBy('ts', 'asc')
+  .execute();
+```
+
+### Get Conversion Funnel
+
+```typescript
+// Step 1: Landing page views
+const step1 = await analytics.db
+  .selectFrom('loc_events')
+  .select(analytics.db.fn.countDistinct('anon_id').as('count'))
+  .where('path', '=', '/')
+  .where('type', '=', 'pageview')
+  .executeTakeFirst();
+
+// Step 2: Pricing page views
+const step2 = await analytics.db
+  .selectFrom('loc_events')
+  .select(analytics.db.fn.countDistinct('anon_id').as('count'))
+  .where('path', '=', '/pricing')
+  .where('type', '=', 'pageview')
+  .executeTakeFirst();
+
+// Step 3: Signup events
+const step3 = await analytics.db
+  .selectFrom('loc_events')
+  .select(analytics.db.fn.countDistinct('anon_id').as('count'))
+  .where('name', '=', 'signup_completed')
+  .where('type', '=', 'event')
+  .executeTakeFirst();
+
+const funnel = {
+  landing: step1?.count || 0,
+  pricing: step2?.count || 0,
+  signup: step3?.count || 0,
+};
+```
+
+---
+
+## Custom Storage Adapters
+
+Implement your own storage backend by creating a custom adapter.
+
+### Adapter Interface
+
+```typescript
+interface StorageAdapter {
+  insertEvents(events: AnyEvent[]): Promise<void>;
+  metrics(opts: {
+    from: Date;
+    to: Date;
+    path?: string;
+  }): Promise<{
+    pageviews: number;
+    uniqueVisitors: number;
+    topPages: { path: string; pageviews: number }[];
+    dailyStats: { date: string; pageviews: number; uniqueVisitors: number }[];
+    topReferrers: { referrer: string; visits: number }[];
+    topEvents: { eventName: string; count: number }[];
+  }>;
+}
+```
+
+### Example: Custom Redis Adapter
+
+```typescript
+import { createLocallyticsHandler } from 'locallytics';
+import { Redis } from 'ioredis';
+
+const redis = new Redis(process.env.REDIS_URL);
+
+const redisAdapter: StorageAdapter = {
+  async insertEvents(events) {
+    for (const event of events) {
+      await redis.zadd('analytics:events', event.ts, JSON.stringify(event));
+    }
+  },
+
+  async metrics({ from, to, path }) {
+    const events = await redis.zrangebyscore(
+      'analytics:events',
+      from.getTime(),
+      to.getTime(),
+    );
+
+    // Compute metrics from events
+    // ... implementation details ...
+
+    return {
+      pageviews: 0,
+      uniqueVisitors: 0,
+      topPages: [],
+      dailyStats: [],
+      topReferrers: [],
+      topEvents: [],
+    };
+  },
+};
+
+const handler = createLocallyticsHandler(redisAdapter);
+export const { GET, POST } = handler;
+```
+
+---
+
+## Building Custom Dashboards
+
+Create rich analytics dashboards with your favorite UI libraries.
+
+### With Recharts
+
+```tsx
+'use client';
+
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+
+export function DailyStatsChart({ data }: { data: any }) {
+  return (
+    <BarChart width={600} height={300} data={data.dailyStats}>
+      <CartesianGrid strokeDasharray="3 3" />
+      <XAxis dataKey="date" />
+      <YAxis />
+      <Tooltip />
+      <Bar dataKey="pageviews" fill="#8884d8" />
+      <Bar dataKey="uniqueVisitors" fill="#82ca9d" />
+    </BarChart>
+  );
+}
+```
+
+### With shadcn/ui
+
+```tsx
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AnalyticsJSON } from 'locallytics';
+
+export default async function Dashboard() {
+  const data = await AnalyticsJSON({});
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Total Pageviews</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold">{data.pageviews.toLocaleString()}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Unique Visitors</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold">{data.uniqueVisitors.toLocaleString()}</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+---
+
+## Privacy & Compliance
+
+### Respecting Do Not Track
+
+```tsx
+<AnalyticsGrabber dntRespect={true} />
+```
+
+When enabled, Locallytics checks the browser's Do Not Track setting and won't track if DNT is enabled.
+
+### GDPR Data Deletion
+
+Delete all data for a specific user:
+
+```typescript
+const analytics = await locallytics({
+  database: process.env.DATABASE_URL!,
+});
+
+// Delete user's data
+await analytics.db.deleteFrom('loc_events').where('anon_id', '=', 'user123').execute();
+```
+
+### Data Export
+
+Export a user's data for GDPR compliance:
+
+```typescript
+const userData = await analytics.db
+  .selectFrom('loc_events')
+  .selectAll()
+  .where('anon_id', '=', 'user123')
+  .execute();
+
+// Convert to JSON and send to user
+const exportData = JSON.stringify(userData, null, 2);
+```
+
+---
+
+## Performance Optimization
+
+### Connection Pooling
+
+For high-traffic applications, configure connection pooling:
+
+```typescript
+import { Kysely, PostgresDialect } from 'kysely';
+import { Pool } from 'pg';
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 20, // Maximum pool size
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+const db = new Kysely({
+  dialect: new PostgresDialect({ pool }),
+});
+
+const analytics = await locallytics({ database: db });
+```
+
+### Batching Events
+
+The `<AnalyticsGrabber />` automatically batches events:
+
+- Max 10 events per batch
+- Sends every 3 seconds
+- Flushes on page visibility change
+
+### Database Indexes
+
+Ensure indexes are created for optimal query performance:
+
+```sql
+CREATE INDEX loc_by_ts ON loc_events(ts);
+CREATE INDEX loc_by_path_ts ON loc_events(path, ts);
+CREATE INDEX loc_by_type_ts ON loc_events(type, ts);
+```
+
+### Data Retention
+
+Implement automatic cleanup of old data:
+
+```typescript
+// Cron job to delete events older than 90 days
+await analytics.db
+  .deleteFrom('loc_events')
+  .where('ts', '<', Date.now() - 90 * 24 * 60 * 60 * 1000)
+  .execute();
+```
+
+---
+
+## Server-Side Tracking
+
+Track events from your server/API routes:
+
+```typescript
+import { locallytics } from 'locallytics';
+
+const analytics = await locallytics({
+  database: process.env.DATABASE_URL!,
+});
+
+// Track a server-side event
+await analytics.adapter.insertEvents([
+  {
+    id: crypto.randomUUID(),
+    ts: Date.now(),
+    sessionId: 'server',
+    type: 'event',
+    name: 'api_call',
+    url: 'https://api.example.com/endpoint',
+    path: '/api/endpoint',
+    props: { method: 'POST', status: 200 },
+  },
+]);
+```
+
+---
+
+## Multiple Environments
+
+Use different endpoints for different environments:
+
+```tsx
+const endpoint =
+  process.env.NODE_ENV === 'production'
+    ? '/api/locallytics'
+    : 'http://localhost:3000/api/locallytics';
+
+<AnalyticsGrabber endpoint={endpoint} />;
+```
+
+---
+
+## Next Steps
+
+<Cards>
+  <Card
+    title="API Reference"
+    href="/docs/api-reference"
+    description="Complete API documentation"
+  />
+  <Card
+    title="Database Schema"
+    href="/docs/database-schema"
+    description="Understand the data structure"
+  />
+  <Card
+    title="GitHub Repository"
+    href="https://github.com/yourusername/locallytics"
+    description="Contribute to the project"
+  />
+</Cards>
