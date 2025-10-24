@@ -1,6 +1,6 @@
 {
   "name": "locallytics",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Analytics that live with your app.",
   "license": "MIT",
   "type": "module",
