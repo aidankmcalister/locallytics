@@ -1,5 +1,4 @@
-// src/server/adapters/memory.ts
-import type { AnyEvent, StorageAdapter } from '../../types';
+import type { AnyEvent, StorageAdapter, CustomEvent } from '../../types';
 
 const store: AnyEvent[] = [];
 
@@ -32,8 +31,9 @@ export const memoryAdapter: StorageAdapter = {
 
       byPathMap.set(r.path, (byPathMap.get(r.path) ?? 0) + 1);
       if (r.referrer) refMap.set(r.referrer, (refMap.get(r.referrer) ?? 0) + 1);
-      if (r.type === 'event' && (r as any).name) {
-        eventMap.set((r as any).name, (eventMap.get((r as any).name) ?? 0) + 1);
+      if (r.type === 'event') {
+        const eventName = (r as CustomEvent).name;
+        eventMap.set(eventName, (eventMap.get(eventName) ?? 0) + 1);
       }
     }
 

@@ -1,11 +1,10 @@
-// src/client/AnalyticsGrabber.tsx
 'use client';
 import { useEffect, useRef } from 'react';
 import type { AnyEvent, EventBase, PageviewEvent } from '../types';
 
 export type GrabberProps = {
-  endpoint?: string; // POST target for events
-  dntRespect?: boolean; // respect Do Not Track (default true)
+  endpoint?: string;
+  dntRespect?: boolean;
 };
 
 export function AnalyticsGrabber({
@@ -74,17 +73,14 @@ export function AnalyticsGrabber({
   useEffect(() => {
     if (dntRespect && (navigator.doNotTrack === '1' || (window as any).doNotTrack === '1')) return;
 
-    // First pageview
     enqueue({ type: 'pageview', title: document.title, ...base() });
 
-    // Background flush
     const iv = setInterval(() => flush(), 3000);
     const onVis = () => {
       if (document.visibilityState === 'hidden') flush();
     };
     document.addEventListener('visibilitychange', onVis);
 
-    // expose a tiny client API
     (window as any).locallytics = {
       track: (name: string, props?: Record<string, unknown>) => {
         const event: AnyEvent = {
@@ -107,8 +103,7 @@ export function AnalyticsGrabber({
       document.removeEventListener('visibilitychange', onVis);
       flush();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dntRespect]);
+  }, [dntRespect, endpoint]);
 
   return null;
 }

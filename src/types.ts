@@ -1,4 +1,3 @@
-// src/types.ts
 export type EventBase = {
   id: string;
   ts: number;

@@ -1,11 +1,9 @@
-// src/server/adapters/kysely.ts
 import type { Kysely } from 'kysely';
 import { sql } from 'kysely';
-import type { AnyEvent, StorageAdapter } from '../../types';
+import type { AnyEvent, StorageAdapter, CustomEvent } from '../../types';
 import type { DB } from '../db-types';
 
 export function makeKyselyAdapter(db: Kysely<DB>): StorageAdapter {
-  // Detect dialect for database-specific queries
   const dialectName = (db.getExecutor() as any).adapter?.dialect?.name || 'postgres';
   const isSqlite = dialectName === 'sqlite';
 
@@ -17,19 +15,18 @@ export function makeKyselyAdapter(db: Kysely<DB>): StorageAdapter {
         ts: e.ts,
         session_id: e.sessionId,
         anon_id: e.anonId ?? null,
-        type: e.type as 'pageview' | 'event',
-        name: e.type === 'event' ? ((e as any).name ?? null) : null,
+        type: e.type,
+        name: e.type === 'event' ? (e as CustomEvent).name : null,
         url: e.url,
         path: e.path,
         referrer: e.referrer ?? null,
-        title: e.type === 'pageview' ? ((e as any).title ?? null) : null,
-        props: e.type === 'event' ? JSON.stringify((e as any).props ?? {}) : null,
+        title: e.type === 'pageview' ? (e.title ?? null) : null,
+        props: e.type === 'event' ? JSON.stringify((e as CustomEvent).props ?? {}) : null,
         screen_w: e.screen?.w ?? null,
         screen_h: e.screen?.h ?? null,
-        ip_hash: (e as any).ipHash ?? null,
+        ip_hash: null,
       }));
 
-      // Bulk insert with dedupe-on-id
       await db
         .insertInto('loc_events')
         .values(rows)
@@ -42,17 +39,14 @@ export function makeKyselyAdapter(db: Kysely<DB>): StorageAdapter {
 
       const filtered = path ? base.where('path', '=', path) : base;
 
-      // Pageviews
       const [{ count: pv } = { count: 0 }] = await filtered
         .select(({ fn }) => [fn.countAll<number>().as('count')])
         .execute();
 
-      // Visitors (distinct anon_id)
       const [{ count: uv } = { count: 0 }] = await filtered
         .select(({ fn }) => [fn.count('anon_id').distinct().as('count')])
         .execute();
 
-      // Top paths
       const byPath = await filtered
         .select(['path'])
         .select(({ fn }) => [fn.countAll<number>().as('pv')])
@@ -61,7 +55,6 @@ export function makeKyselyAdapter(db: Kysely<DB>): StorageAdapter {
         .limit(20)
         .execute();
 
-      // Referrers
       const topReferrers = await filtered
         .select(({ fn, eb }) => [
           eb.fn.coalesce('referrer', sql<string>`'(direct)'`).as('referrer'),
@@ -72,7 +65,6 @@ export function makeKyselyAdapter(db: Kysely<DB>): StorageAdapter {
         .limit(20)
         .execute();
 
-      // Events
       const topEvents = await filtered
         .where('type', '=', 'event')
         .select(({ fn, eb }) => [
@@ -84,7 +76,6 @@ export function makeKyselyAdapter(db: Kysely<DB>): StorageAdapter {
         .limit(20)
         .execute();
 
-      // Timeseries (per-day) - dialect-specific
       const timeseriesDateExpr = isSqlite
         ? sql<string>`date(ts/1000, 'unixepoch')`
         : sql<string>`to_char(to_timestamp(ts/1000)::date, 'YYYY-MM-DD')`;
