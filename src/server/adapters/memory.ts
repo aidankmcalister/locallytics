@@ -37,22 +37,22 @@ export const memoryAdapter: StorageAdapter = {
       }
     }
 
-    const byPath = [...byPathMap]
-      .map(([path, pv]) => ({ path, pv }))
-      .sort((a, b) => b.pv - a.pv)
+    const topPages = [...byPathMap]
+      .map(([path, pageviews]) => ({ path, pageviews }))
+      .sort((a, b) => b.pageviews - a.pageviews)
       .slice(0, 20);
     const topReferrers = [...refMap]
-      .map(([referrer, count]) => ({ referrer, count }))
-      .sort((a, b) => b.count - a.count)
+      .map(([referrer, visits]) => ({ referrer, visits }))
+      .sort((a, b) => b.visits - a.visits)
       .slice(0, 20);
     const topEvents = [...eventMap]
-      .map(([name, count]) => ({ name, count }))
+      .map(([eventName, count]) => ({ eventName, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 20);
-    const timeseries = [...dayMap]
+    const dailyStats = [...dayMap]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([t, v]) => ({ t, pv: v.pv, uv: v.uvSet.size }));
+      .map(([date, v]) => ({ date, pageviews: v.pv, uniqueVisitors: v.uvSet.size }));
 
-    return { pageviews, visitors, byPath, timeseries, topReferrers, topEvents };
+    return { pageviews, uniqueVisitors: visitors, topPages, dailyStats, topReferrers, topEvents };
   },
 };

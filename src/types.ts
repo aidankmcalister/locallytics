@@ -23,10 +23,10 @@ export interface StorageAdapter {
   insertEvents(events: AnyEvent[]): Promise<void>;
   metrics(opts: { from: Date; to: Date; path?: string }): Promise<{
     pageviews: number;
-    visitors: number;
-    byPath: { path: string; pv: number }[];
-    timeseries: { t: string; pv: number; uv: number }[];
-    topReferrers: { referrer: string; count: number }[];
-    topEvents: { name: string; count: number }[];
+    uniqueVisitors: number;
+    topPages: { path: string; pageviews: number }[];
+    dailyStats: { date: string; pageviews: number; uniqueVisitors: number }[];
+    topReferrers: { referrer: string; visits: number }[];
+    topEvents: { eventName: string; count: number }[];
   }>;
 }
