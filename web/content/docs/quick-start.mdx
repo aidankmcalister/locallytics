@@ -1,0 +1,97 @@
+---
+title: Quick Start
+description: Get started with Locallytics in 5 steps
+---
+
+## 1. Install the Package
+
+```bash tab="npm"
+npm install locallytics
+```
+
+```bash tab="pnpm"
+pnpm install locallytics
+```
+
+```bash tab="yarn"
+yarn install locallytics
+```
+
+```bash tab="bun"
+bun install locallytics
+```
+
+## 2. Set Up the Server
+
+Create an API route handler with your database connection:
+
+```ts title="app/api/locallytics/route.ts"
+import { locallytics } from "locallytics";
+
+export const analytics = await locallytics({
+  database: process.env.DATABASE_URL!,
+});
+
+export const { GET, POST } = analytics;
+```
+
+## 3. Run Migrations
+
+Generate and run the database schema:
+
+```bash
+# Generate schema (creates ./locallytics/schema.sql)
+npx locallytics generate
+
+# Run migrations
+npx locallytics migrate
+```
+
+## 4. Add the Analytics Grabber
+
+Add `<AnalyticsGrabber />` to your root layout:
+
+```tsx title="app/layout.tsx"
+import { AnalyticsGrabber } from "locallytics";
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html>
+      <body>
+        {children}
+        <AnalyticsGrabber />
+      </body>
+    </html>
+  );
+}
+```
+
+## 5. Fetch Analytics Data
+
+Create a page to display your analytics:
+
+```tsx title="app/analytics/page.tsx"
+import { AnalyticsJSON } from "locallytics";
+import { headers } from "next/headers";
+
+export default async function AnalyticsPage() {
+  const data = await AnalyticsJSON({ headersReader: headers });
+
+  return (
+    <div>
+      <h1>Pageviews: {data.pageviews}</h1>
+      <h2>Unique Visitors: {data.uniqueVisitors}</h2>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
+}
+```
+
+## What's Next?
+
+- Check out the [API Reference](/docs/api-reference) for more details
+- Learn about available metrics and how to track custom events

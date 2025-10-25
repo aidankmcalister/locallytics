@@ -1,0 +1,178 @@
+---
+title: API Reference
+description: Complete API reference for Locallytics
+---
+
+## Server API
+
+### `locallytics(config)`
+
+Create a Locallytics instance with database-backed analytics.
+
+```ts
+import { locallytics } from "locallytics";
+
+const analytics = await locallytics({
+  database: process.env.DATABASE_URL!,
+  dialect: "postgres" // or "sqlite"
+});
+
+export const { GET, POST } = analytics;
+```
+
+#### Parameters
+
+- `database` (string | Kysely instance) - Database connection string or Kysely instance
+- `dialect` (optional) - `"postgres"` or `"sqlite"` (auto-detected from connection string)
+
+#### Returns
+
+- `handler` - Unified handler supporting GET and POST
+- `GET` - Handler for metrics requests
+- `POST` - Handler for event ingestion
+- `adapter` - Storage adapter for custom usage
+- `db` - Kysely database instance
+
+### `locallyticsSync(config)`
+
+Synchronous version for pre-configured Kysely instances.
+
+```ts
+import { locallyticsSync } from "locallytics";
+import { db } from "./db";
+
+const analytics = locallyticsSync({ db });
+```
+
+## Client Components
+
+### `<AnalyticsGrabber />`
+
+Client-side analytics collector that tracks pageviews and custom events.
+
+```tsx
+import { AnalyticsGrabber } from "locallytics";
+
+<AnalyticsGrabber
+  endpoint="/api/locallytics"
+  dntRespect={true}
+/>
+```
+
+#### Props
+
+- `endpoint` (optional) - API endpoint to send events to (default: `"/api/locallytics"`)
+- `dntRespect` (optional) - Respect Do Not Track browser setting (default: `true`)
+
+#### Browser API
+
+Once mounted, `AnalyticsGrabber` exposes `window.locallytics`:
+
+```ts
+// Track custom events
+window.locallytics.track('button_click', { button: 'signup' });
+
+// Track pageviews manually
+window.locallytics.trackPageview({ title: 'Custom Title' });
+
+// Force flush queued events
+window.locallytics.flush();
+```
+
+## Server Components
+
+### `AnalyticsJSON(options)`
+
+Server-side component that fetches analytics data.
+
+```tsx
+import { AnalyticsJSON } from "locallytics";
+import { headers } from "next/headers";
+
+const data = await AnalyticsJSON({
+  headersReader: headers,
+  from: "2024-01-01",
+  to: "2024-12-31",
+  path: "/blog"
+});
+```
+
+#### Parameters
+
+- `endpoint` (optional) - API endpoint (default: `"/api/locallytics"`)
+- `from` (optional) - Start date (ISO string, default: 30 days ago)
+- `to` (optional) - End date (ISO string, default: now)
+- `path` (optional) - Filter by specific path
+- `headersReader` (optional) - Function to read request headers (recommended for SSR)
+
+#### Returns
+
+```ts
+{
+  pageviews: number;
+  uniqueVisitors: number;
+  topPages: { path: string; pageviews: number }[];
+  dailyStats: { date: string; pageviews: number; uniqueVisitors: number }[];
+  topReferrers: { referrer: string; visits: number }[];
+  topEvents: { eventName: string; count: number }[];
+}
+```
+
+## CLI
+
+### `generate`
+
+Generate database schema.
+
+```bash
+npx locallytics generate [options]
+```
+
+Options:
+- `-d, --dialect <type>` - Database dialect (postgres or sqlite, default: postgres)
+- `-o, --output <path>` - Output path (default: ./locallytics/schema.sql)
+
+### `migrate`
+
+Run database migrations.
+
+```bash
+npx locallytics migrate [options]
+```
+
+Options:
+- `-u, --database-url <url>` - Database connection URL (or use `DATABASE_URL` env var)
+
+## Types
+
+### `AnyEvent`
+
+```ts
+type PageviewEvent = {
+  type: 'pageview';
+  title?: string;
+  // ... base event fields
+};
+
+type CustomEvent = {
+  type: 'event';
+  name: string;
+  props?: Record<string, unknown>;
+  // ... base event fields
+};
+
+type AnyEvent = PageviewEvent | CustomEvent;
+```
+
+### `StorageAdapter`
+
+```ts
+interface StorageAdapter {
+  insertEvents(events: AnyEvent[]): Promise<void>;
+  metrics(opts: {
+    from: Date;
+    to: Date;
+    path?: string
+  }): Promise<MetricsData>;
+}
+```
