@@ -16,9 +16,10 @@ jobs:
       matrix:
         package: ['locallytics', 'cli']
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history for all branches and tags
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -27,23 +28,44 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
+      - name: Configure Git
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+
       - name: Install dependencies
         run: |
           cd packages/${{ matrix.package }}
           npm install -g npm@latest
-          # First try npm ci, if it fails, fall back to npm install
-          if ! npm ci; then
-            echo "⚠️ package-lock.json out of sync with package.json, running npm install..."
-            npm install
-          fi
-          
-      - name: Build package
+          npm ci --prefer-offline
+
+      - name: Bump version and publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
         run: |
           cd packages/${{ matrix.package }}
+          
+          # Get current version
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Bump patch version
+          npm version patch --no-git-tag-version
+          
+          # Get new version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "New version: $NEW_VERSION"
+          
+          # Update package-lock.json with new version
+          npm install --package-lock-only
+          
+          # Build the package
           npm run build --if-present
           
-      - name: Publish package
-        if: success()
-        run: |
-          cd packages/${{ matrix.package }}
+          # Publish to npm
           npm publish --access public
+          
+          # Commit and push version bump
+          git add package.json package-lock.json
+          git commit -m "chore(release): ${{ matrix.package }}@$NEW_VERSION"
+          git push
