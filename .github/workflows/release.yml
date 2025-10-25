@@ -3,10 +3,13 @@ name: Publish Packages
 on:
   push:
     branches: [main]
+    paths:
+      - "packages/**/package.json"
+      - ".github/workflows/release.yml"
 
 permissions:
   id-token: write
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -26,17 +29,42 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "npm"
 
+      - name: Configure Git
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+
       - name: Install and publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd packages/${{ matrix.package }}
 
-          # Install dependencies (this will update package-lock.json if needed)
-          npm install
+          # Get the last commit message
+          LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
 
-          # Build the package
+          # Determine version bump type from commit message
+          if [[ $LAST_COMMIT_MSG == *"major"* ]]; then
+            BUMP_TYPE="major"
+          elif [[ $LAST_COMMIT_MSG == *"minor"* ]]; then
+            BUMP_TYPE="minor"
+          else
+            BUMP_TYPE="patch"
+          fi
+
+          echo "Bumping $BUMP_TYPE version"
+
+          # Bump version
+          npm version $BUMP_TYPE -m "chore(release): %s [skip ci]"
+
+          # Install dependencies and build
+          npm install
           npm run build --if-present
 
-          # Publish with the current version
+          # Publish to npm
           npm publish --access public
+
+          # Push the version bump commit
+          git push origin HEAD:main
+          git push --tags
