@@ -37,7 +37,8 @@
     "check-lint": "eslint . --ext .ts,.tsx --config eslint.config.js"
   },
   "peerDependencies": {
-    "react": ">=18"
+    "react": ">=18",
+    "react-dom": ">=18"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -52,11 +53,14 @@
     "eslint-plugin-react-hooks": "^7.0.0",
     "eslint-plugin-react-refresh": "^0.4.24",
     "prettier": "^3.4.2",
+    "resolve-from": "^5.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "zod": "^3.22.0"
   },
   "dependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.4.1",
     "kysely": "^0.28.8",
     "pg": "^8.13.1",
     "semantic-release": "^24.2.9"

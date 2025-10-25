@@ -7,6 +7,7 @@ import { createLocallyticsHandler } from './createLocallyticsHandler';
 export interface LocallyticsConfig {
   /** Postgres connection string or Kysely instance */
   database: string | Kysely<DB>;
+  dialect?: 'postgres' | 'sqlite';
 }
 
 export interface LocallyticsInstance {
@@ -26,15 +27,31 @@ export interface LocallyticsInstance {
   metrics: (req: Request) => Promise<Response>;
 }
 
-async function createKyselyFromConnectionString(connectionString: string): Promise<Kysely<DB>> {
-  const { Kysely, PostgresDialect } = await import('kysely');
-  const { Pool } = await import('pg');
+async function createKyselyFromConnectionString(
+  connectionString: string,
+  dialect: 'postgres' | 'sqlite' = 'postgres',
+): Promise<Kysely<DB>> {
+  const { Kysely } = await import('kysely');
 
-  return new Kysely<DB>({
-    dialect: new PostgresDialect({
-      pool: new Pool({ connectionString }),
-    }),
-  });
+  if (dialect === 'postgres') {
+    const { PostgresDialect } = await import('kysely');
+    const { Pool } = await import('pg');
+    
+    return new Kysely<DB>({
+      dialect: new PostgresDialect({
+        pool: new Pool({ connectionString }),
+      }),
+    });
+  } else {
+    const { SqliteDialect } = await import('kysely');
+    const Database = (await import('better-sqlite3')).default;
+    
+    return new Kysely<DB>({
+      dialect: new SqliteDialect({
+        database: new Database(connectionString.replace('file:', '')),
+      }),
+    });
+  }
 }
 
 /**
@@ -58,7 +75,8 @@ export async function createLocallytics(config: LocallyticsConfig): Promise<Loca
   if (typeof config.database !== 'string') {
     db = config.database;
   } else {
-    db = await createKyselyFromConnectionString(config.database);
+    const dialect = config.dialect || (config.database.startsWith('postgres') ? 'postgres' : 'sqlite');
+    db = await createKyselyFromConnectionString(config.database, dialect);
   }
 
   const adapter = makeKyselyAdapter(db);
