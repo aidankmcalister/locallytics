@@ -28,7 +28,7 @@ export default function HomePage() {
       />
 
       {/* Hero Section */}
-      <div className="relative mx-auto flex min-h-[70vh] max-w-4xl flex-col items-center justify-center px-6 py-24 text-center">
+      <div className="relative mx-auto flex min-h-[75vh] max-w-4xl flex-col items-center justify-center px-6 py-24 text-center">
         <Origami
           strokeWidth={1.5}
           className="mb-6 h-12 w-12 text-neutral-900 dark:text-white"
