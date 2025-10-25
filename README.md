@@ -25,11 +25,11 @@ Locallytics is a privacy-first analytics solution where developers drop in an `<
 
 - **Lightweight**: No external dependencies
 - **Simple**: Easy to set up and use
-- **Fast**: Fast performance with event batching and `sendBeacon()`
-- **Secure**: Secure by default with Do Not Track (DNT) support
-- **Flexible**: Custom adapter interface for bring-your-own-database
-- **Private**: No cookies, uses localStorage, runs entirely on your infrastructure
-- **Type Safe**: Full TypeScript support throughout the SDK
+- **Fast**: Event batching with reliable delivery
+- **Secure**: Do Not Track (DNT) support
+- **Flexible**: Supports PostgreSQL and SQLite
+- **Private**: No cookies, runs on your infrastructure
+- **Type Safe**: Full TypeScript support
 
 ## Quick Start
 
@@ -55,17 +55,14 @@ export const analytics = await locallytics({
 export const { GET, POST } = analytics;
 ```
 
-3.  **Install and use the CLI**
+3.  **Run migrations**
 
 ```bash
-# Install the CLI
-npm install -g @locallytics/cli
-
-# Generate migrations
-npx @locallytics/cli generate
+# Generate schema (creates ./locallytics/schema.sql)
+npx locallytics generate
 
 # Run migrations
-npx @locallytics/cli migrate
+npx locallytics migrate
 ```
 
 4. **Add AnalyticsGrabber to your layout**:
@@ -90,29 +87,34 @@ export default function RootLayout({
 }
 ```
 
-5. **Add to your Next.js app** (app router):
+5. **Fetch analytics data**:
 
 ```tsx
 // app/analytics/page.tsx
 import { AnalyticsJSON } from "locallytics";
+import { headers } from "next/headers";
 
 export default async function AnalyticsPage() {
-  const data = await AnalyticsJSON({});
+  const data = await AnalyticsJSON({ headersReader: headers });
 
-  return <pre>{JSON.stringify(data, null, 2)}</pre>;
+  return (
+    <div>
+      <h1>Pageviews: {data.pageviews}</h1>
+      <h2>Unique Visitors: {data.uniqueVisitors}</h2>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
 }
 ```
 
-AnalyticsJSON response structure:
-
 ## Available Metrics
 
-- Pageviews
-- Unique visitors
-- Top pages
-- Daily stats
-- Referrers
-- Custom events
+- `pageviews` - Total page views
+- `uniqueVisitors` - Unique visitor count
+- `topPages` - Most visited pages with counts
+- `dailyStats` - Daily pageviews and unique visitors
+- `topReferrers` - Top referrer sources
+- `topEvents` - Custom event counts
 
 ## License
 
