@@ -1,5 +1,5 @@
 {
-  "name": "locallytics",
+  "name": "@locallytics/locallytics",
   "version": "0.0.3",
   "description": "Analytics that live with your app.",
   "license": "MIT",
