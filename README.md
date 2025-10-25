@@ -1,14 +1,34 @@
 # Locallytics
 
-**Analytics that live with your app.**
+[![npm version](https://img.shields.io/npm/v/locallytics.svg)](https://www.npmjs.com/package/locallytics)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/locallytics)](https://bundlephobia.com/package/locallytics)
+
+**Tagline:** "Analytics that live with your app."
+
+Self-contained analytics SDK that runs entirely on your infrastructure – no external servers, no tracking scripts, no cost.
+
+## Project Structure
+
+This is a monorepo containing the Locallytics packages:
+
+- `packages/` - Contains all the packages
+  - `locallytics/` - The main Locallytics package
+- `docs/` - Documentation and guides for the project
+
+## Overview
+
+Locallytics is a privacy-first analytics solution where developers drop in an `<AnalyticsGrabber />` component to collect data and use `AnalyticsJSON()` to fetch metrics, all powered by their own database and hosting.
 
 ## Why Locallytics?
 
 - **Lightweight**: No external dependencies
 - **Simple**: Easy to set up and use
-- **Fast**: Fast performance
-- **Secure**: Secure by default
-- **Flexible**: Flexible configuration
+- **Fast**: Fast performance with event batching and `sendBeacon()`
+- **Secure**: Secure by default with Do Not Track (DNT) support
+- **Flexible**: Custom adapter interface for bring-your-own-database
+- **Private**: No cookies, uses localStorage, runs entirely on your infrastructure
+- **Type Safe**: Full TypeScript support throughout the SDK
 
 ## Quick Start
 
@@ -81,3 +101,18 @@ export default async function AnalyticsPage() {
   return <pre>{JSON.stringify(data, null, 2)}</pre>;
 }
 ```
+
+AnalyticsJSON response structure:
+
+## Available Metrics
+
+- Pageviews
+- Unique visitors
+- Top pages
+- Daily stats
+- Referrers
+- Custom events
+
+## License
+
+MIT
