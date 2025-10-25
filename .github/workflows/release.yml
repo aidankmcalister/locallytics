@@ -1,69 +1,38 @@
 name: Publish Packages
 
 on:
-  workflow_dispatch: # Allows manual triggering
   push:
-    branches:
-      - main
-    # paths:
-    #   - "packages/**/package.json"
-    #   - ".github/workflows/publish.yml"
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   publish:
-    name: Publish Packages
+    name: Publish ${{ matrix.package }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
-
+    strategy:
+      matrix:
+        package: ['locallytics', 'cli']
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GH_TOKEN }}
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          registry-url: "https://registry.npmjs.org"
-          cache: "npm"
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
 
-      - name: Configure Git
+      - name: Update npm and install dependencies
         run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-
-      - name: Install dependencies
-        run: |
-          npm ci
+          cd packages/${{ matrix.package }}
           npm install -g npm@latest
-
-      - name: Build packages
-        run: npm run build --workspaces
-
-      - name: Publish @locallytics/cli
-        working-directory: ./packages/cli
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm ci
+          
+      - name: Publish package
+        if: success()
         run: |
-          npm version patch --no-git-tag-version
-          npm publish --access public --registry=https://registry.npmjs.org/
-
-      - name: Publish locallytics
-        working-directory: ./packages/locallytics
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          npm version patch --no-git-tag-version
-          npm publish --access public --registry=https://registry.npmjs.org/
-
-      - name: Commit version updates
-        run: |
-          git add .
-          git diff --quiet && git diff --staged --quiet || \
-          (git commit -m "chore(release): publish packages" && git push)
+          cd packages/${{ matrix.package }}
+          npm publish
