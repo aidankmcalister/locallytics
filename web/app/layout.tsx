@@ -9,6 +9,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NODE_ENV === "production"
+      ? "https://locallytics.dev"
+      : "http://localhost:3000"
+  ),
   title: "Locallytics",
   description: "Analytics that live with your app.",
   openGraph: {
