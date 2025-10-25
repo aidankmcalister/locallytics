@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
-import Header from "./components/Header";
+import { RootProvider } from "fumadocs-ui/provider/next";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -20,9 +20,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${nunito.variable} antialiased`}>
-        <Header />
-        {children}
+      <body
+        className={`${nunito.variable} antialiased flex flex-col min-h-screen`}
+      >
+        <RootProvider>{children}</RootProvider>
       </body>
     </html>
   );
