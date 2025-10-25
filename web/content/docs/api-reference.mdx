@@ -14,7 +14,7 @@ import { locallytics } from "locallytics";
 
 const analytics = await locallytics({
   database: process.env.DATABASE_URL!,
-  dialect: "postgres" // or "sqlite"
+  dialect: "postgres", // or "sqlite"
 });
 
 export const { GET, POST } = analytics;
@@ -53,10 +53,7 @@ Client-side analytics collector that tracks pageviews and custom events.
 ```tsx
 import { AnalyticsGrabber } from "locallytics";
 
-<AnalyticsGrabber
-  endpoint="/api/locallytics"
-  dntRespect={true}
-/>
+<AnalyticsGrabber endpoint="/api/locallytics" dntRespect={true} />;
 ```
 
 #### Props
@@ -70,10 +67,10 @@ Once mounted, `AnalyticsGrabber` exposes `window.locallytics`:
 
 ```ts
 // Track custom events
-window.locallytics.track('button_click', { button: 'signup' });
+window.locallytics.track("button_click", { button: "signup" });
 
 // Track pageviews manually
-window.locallytics.trackPageview({ title: 'Custom Title' });
+window.locallytics.trackPageview({ title: "Custom Title" });
 
 // Force flush queued events
 window.locallytics.flush();
@@ -93,7 +90,7 @@ const data = await AnalyticsJSON({
   headersReader: headers,
   from: "2024-01-01",
   to: "2024-12-31",
-  path: "/blog"
+  path: "/blog",
 });
 ```
 
@@ -111,10 +108,27 @@ const data = await AnalyticsJSON({
 {
   pageviews: number;
   uniqueVisitors: number;
-  topPages: { path: string; pageviews: number }[];
-  dailyStats: { date: string; pageviews: number; uniqueVisitors: number }[];
-  topReferrers: { referrer: string; visits: number }[];
-  topEvents: { eventName: string; count: number }[];
+  topPages: {
+    path: string;
+    pageviews: number;
+  }
+  [];
+  dailyStats: {
+    date: string;
+    pageviews: number;
+    uniqueVisitors: number;
+  }
+  [];
+  topReferrers: {
+    referrer: string;
+    visits: number;
+  }
+  [];
+  topEvents: {
+    eventName: string;
+    count: number;
+  }
+  [];
 }
 ```
 
@@ -125,10 +139,11 @@ const data = await AnalyticsJSON({
 Generate database schema.
 
 ```bash
-npx locallytics generate [options]
+npx @locallytics/cli generate
 ```
 
 Options:
+
 - `-d, --dialect <type>` - Database dialect (postgres or sqlite, default: postgres)
 - `-o, --output <path>` - Output path (default: ./locallytics/schema.sql)
 
@@ -137,10 +152,11 @@ Options:
 Run database migrations.
 
 ```bash
-npx locallytics migrate [options]
+npx @locallytics/cli migrate
 ```
 
 Options:
+
 - `-u, --database-url <url>` - Database connection URL (or use `DATABASE_URL` env var)
 
 ## Types
@@ -149,13 +165,13 @@ Options:
 
 ```ts
 type PageviewEvent = {
-  type: 'pageview';
+  type: "pageview";
   title?: string;
   // ... base event fields
 };
 
 type CustomEvent = {
-  type: 'event';
+  type: "event";
   name: string;
   props?: Record<string, unknown>;
   // ... base event fields
@@ -169,10 +185,6 @@ type AnyEvent = PageviewEvent | CustomEvent;
 ```ts
 interface StorageAdapter {
   insertEvents(events: AnyEvent[]): Promise<void>;
-  metrics(opts: {
-    from: Date;
-    to: Date;
-    path?: string
-  }): Promise<MetricsData>;
+  metrics(opts: { from: Date; to: Date; path?: string }): Promise<MetricsData>;
 }
 ```
