@@ -17,6 +17,8 @@ jobs:
         package: ['locallytics', 'cli']
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -25,14 +27,23 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
-      - name: Update npm and install dependencies
+      - name: Install dependencies
         run: |
           cd packages/${{ matrix.package }}
           npm install -g npm@latest
-          npm ci
+          # First try npm ci, if it fails, fall back to npm install
+          if ! npm ci; then
+            echo "⚠️ package-lock.json out of sync with package.json, running npm install..."
+            npm install
+          fi
+          
+      - name: Build package
+        run: |
+          cd packages/${{ matrix.package }}
+          npm run build --if-present
           
       - name: Publish package
         if: success()
         run: |
           cd packages/${{ matrix.package }}
-          npm publish
+          npm publish --access public
