@@ -14,6 +14,7 @@ This is a monorepo containing the Locallytics packages:
 
 - `packages/` - Contains all the packages
   - `locallytics/` - The main Locallytics package
+  - `cli/` - The Locallytics CLI
 - `docs/` - Documentation and guides for the project
 
 ## Overview
