@@ -10,14 +10,12 @@ on:
 permissions:
   id-token: write
   contents: write
+  packages: write
 
 jobs:
   publish:
-    name: Publish ${{ matrix.package }}
+    name: Publish locallytics
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        package: ["locallytics", "cli"]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,7 +37,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd packages/${{ matrix.package }}
+          cd packages/locallytics
 
           # Get the last commit message
           LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
