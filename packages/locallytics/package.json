@@ -33,6 +33,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "test": "vitest",
     "prepublishOnly": "npm run build",
     "lint": "eslint . --ext .ts,.tsx --fix --config eslint.config.js",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
@@ -59,6 +60,7 @@
     "resolve-from": "^5.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
+    "vitest": "^4.0.3",
     "zod": "^3.22.0"
   },
   "dependencies": {
